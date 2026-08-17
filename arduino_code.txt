@@ -1,0 +1,159 @@
+#include "Wire.h"
+#include <MPU6050_light.h>
+#include <Servo.h>
+
+MPU6050 mpu(Wire);
+Servo myServo1;
+Servo myServo2;
+Servo myServo3;
+void setup() {
+  Serial.begin(9600); 
+  Wire.begin();
+
+  // Initialize the sensor
+  byte status = mpu.begin();
+  if (status != 0) {
+    Serial.println("MPU6050 connection failed! Check wiring.");
+    while (1) {} // Halt if sensor isn't found
+  }
+
+  myServo1.attach(8);
+  myServo2.attach(9);
+  myServo3.attach(10);
+
+  // Calibrate the sensor. Keep it perfectly flat and still!
+  Serial.println("Calibrating...");
+  delay(1000);
+  mpu.calcOffsets(true, true); 
+  Serial.println("Calibration complete.");
+  delay(1000);
+}
+
+void loop() {
+  mpu.update();
+
+  // Get Yaw, Pitch, and Roll
+  float yaw = -mpu.getAngleZ();
+  float pitch = -mpu.getAngleY();
+  float roll = mpu.getAngleX();
+
+  // Send data in the format: yaw/pitch/roll
+  Serial.print(yaw);
+  Serial.print("/");
+  Serial.print(pitch);
+  Serial.print("/");
+  Serial.print(roll); 
+
+
+  int rollAngle  = map(roll,  -90, 90, 0, 180);
+  int pitchAngle = map(pitch, -90, 90, 0, 180);
+  int yawAngle   = map(yaw,    -90, 90, 0, 180);
+
+  rollAngle  = constrain(rollAngle, 0, 180);
+  pitchAngle = constrain(pitchAngle, 0, 180);
+  yawAngle   = constrain(yawAngle, 0, 180);
+
+  // Move servos
+  myServo2.write(rollAngle);
+  myServo1.write(pitchAngle);
+  myServo3.write(yawAngle);
+
+  // int servoAngle = map(pitch, -90, 90, 0, 180);
+  // servoAngle = constrain(servoAngle, 0, 180);
+
+  // myServo.write(constrain(servoAngle, 0, 180));
+  // myServo.write(servoAngle);
+  // myServo.write(servoAngle);
+
+
+  // Serial.print("/");
+  // Serial.println(servoAngle); 
+
+  Serial.print("R: "); Serial.print(roll);
+  Serial.print(" P: "); Serial.print(pitch);
+  Serial.print(" Y: "); Serial.println(yaw);
+
+  // delay(100); // Run at ~50fps
+}
+
+// #include <Wire.h>
+// #include <Servo.h>
+
+// const int MPU = 0x68;
+
+// Servo myServo;
+
+// float AccX, AccY, AccZ;
+// float GyroX, GyroY, GyroZ;
+
+// float roll, pitch;
+// float roll_f = 0, pitch_f = 0;
+
+// long prevTime;
+// float dt;
+
+// void setup() {
+//   Wire.begin();
+//   Serial.begin(115200);
+
+//   // Wake up MPU6050
+//   Wire.beginTransmission(MPU);
+//   Wire.write(0x6B);
+//   Wire.write(0);
+//   Wire.endTransmission(true);
+
+//   myServo.attach(10);  // servo pin
+
+//   prevTime = millis();
+// }
+
+// void loop() {
+//   // Read MPU6050
+//   Wire.beginTransmission(MPU);
+//   Wire.write(0x3B);
+//   Wire.endTransmission(false);
+//   Wire.requestFrom(MPU, 14, true);
+
+//   AccX = Wire.read() << 8 | Wire.read();
+//   AccY = Wire.read() << 8 | Wire.read();
+//   AccZ = Wire.read() << 8 | Wire.read();
+
+//   Wire.read(); Wire.read(); // skip temp
+
+//   GyroX = Wire.read() << 8 | Wire.read();
+//   GyroY = Wire.read() << 8 | Wire.read();
+//   GyroZ = Wire.read() << 8 | Wire.read();
+
+//   // Convert to real values
+//   AccX /= 16384.0;
+//   AccY /= 16384.0;
+//   AccZ /= 16384.0;
+
+//   GyroX /= 131.0;
+//   GyroY /= 131.0;
+
+//   // Time delta
+//   long currTime = millis();
+//   dt = (currTime - prevTime) / 1000.0;
+//   prevTime = currTime;
+
+//   // Calculate angles (accelerometer)
+//   float roll_acc = atan2(AccY, AccZ) * 180 / PI;
+//   float pitch_acc = atan2(-AccX, sqrt(AccY * AccY + AccZ * AccZ)) * 180 / PI;
+
+//   // Complementary filter
+//   roll_f = 0.96 * (roll_f + GyroX * dt) + 0.04 * roll_acc;
+//   pitch_f = 0.96 * (pitch_f + GyroY * dt) + 0.04 * pitch_acc;
+
+//   // ---- SERVO CONTROL ----
+//   int servoAngle = map(pitch_f, -90, 90, 0, 180);
+//   servoAngle = constrain(servoAngle, 0, 180);
+
+//   myServo.write(servoAngle);
+
+//   // Debug
+//   Serial.print("Pitch: "); Serial.print(pitch_f);
+//   Serial.print(" | Servo: "); Serial.println(servoAngle);
+
+//   delay(10);
+// }
